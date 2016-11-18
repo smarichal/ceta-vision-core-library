@@ -7,7 +7,11 @@ import edu.ceta.vision.core.TopcodeGameTest;
 
 public class TopcodeGameTestDesktop {
 	public static void main (String[] args) {
-		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-		new LwjglApplication(new TopcodeGameTest(), config);
+//		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+//		new LwjglApplication(new TopcodeGameTest(), config);
+		
+		
+		Test test = new Test();
+		test.main(null);
 	}
 }

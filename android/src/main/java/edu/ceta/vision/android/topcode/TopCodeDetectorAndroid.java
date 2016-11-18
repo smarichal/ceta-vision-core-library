@@ -18,9 +18,13 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 	protected Bitmap bmp;
 	
 	public TopCodeDetectorAndroid(int max_markers, boolean probMode, int max_marker_diameter, 
-								int size_cache, boolean cacheEnabled, boolean allow_different_spot_distance){
+								int size_cache, boolean cacheEnabled, boolean allow_different_spot_distance, boolean use_native_scanner){
 		super(max_markers, probMode, max_marker_diameter, size_cache, cacheEnabled, allow_different_spot_distance);
-		this.scanner = new ScannerAndroid();
+		if(use_native_scanner){
+			this.scanner = new ScannerAndroidNative();
+		}else{
+			this.scanner = new ScannerAndroid();
+		}
 		if(max_marker_diameter>0){
 			this.scanner.setMaxCodeDiameter(max_marker_diameter);
 		}
