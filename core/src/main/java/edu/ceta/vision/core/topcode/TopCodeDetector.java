@@ -18,8 +18,6 @@ import edu.ceta.vision.core.utils.Logger;
 import edu.ceta.vision.core.utils.SpotsCache;
 import edu.ceta.vision.core.utils.TopCodeSorter;
 
-
-
 public abstract class TopCodeDetector {
 	protected Scanner scanner;
 	protected List<TopCode> markers;

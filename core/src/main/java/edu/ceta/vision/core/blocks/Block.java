@@ -2,6 +2,7 @@ package edu.ceta.vision.core.blocks;
 
 import java.util.List;
 
+
 import org.opencv.core.Point;
 import org.opencv.core.Size;
 
