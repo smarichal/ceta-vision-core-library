@@ -379,7 +379,7 @@ public class TopCode {
 /**
  * Returns true if the given point is inside the bulls-eye
  */
-   protected boolean inBullsEye(float px, float py) {
+   public boolean inBullsEye(float px, float py) {
       return (((x - px) * (x - px) + (y - py) * (y - py)) <= (unit * unit));
    }
 

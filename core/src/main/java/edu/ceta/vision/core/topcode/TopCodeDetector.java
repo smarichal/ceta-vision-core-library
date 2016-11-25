@@ -18,6 +18,8 @@ import edu.ceta.vision.core.utils.Logger;
 import edu.ceta.vision.core.utils.SpotsCache;
 import edu.ceta.vision.core.utils.TopCodeSorter;
 
+
+
 public abstract class TopCodeDetector {
 	protected Scanner scanner;
 	protected List<TopCode> markers;
@@ -184,7 +186,17 @@ public abstract class TopCodeDetector {
 	}
 
 	protected Block processBlockClass5(List<TopCode> markers, Block block) {
-		return null;
+		if(markers.size()==5){
+			Point center = getMiddlePoint(markers);
+			block = new Block(5);
+			block.setCenter(center);
+		}else{
+			List<TopCode> missingSpots = getMissingSpotInBlock5(markers);
+			markers.addAll(missingSpots);
+			block = new Block(5);
+			block.setCenter(getMiddlePoint(markers));
+		}
+		return block;
 	}
 	
 	protected Block processBlockClass4(List<TopCode> markers, Block block) {
@@ -192,13 +204,11 @@ public abstract class TopCodeDetector {
 			Point center = getMiddlePoint(markers);
 			block = new Block(4);
 			block.setCenter(center);
-			//TODO compute area and orientation of the block
 		}else{
 			List<TopCode> missingSpots = getMissingSpotInBlock4(markers); 
 			markers.addAll(missingSpots);
 			block = new Block(4);
 			block.setCenter(getMiddlePoint(markers));		
-			//TODO compute area and orientation of the block
 		} 
 		return block;
 	}
@@ -623,6 +633,288 @@ public abstract class TopCodeDetector {
 		return spot_eList;
 	}
 	
+	
+	private List<TopCode> getMissingSpotInBlock5(List<TopCode> spots){
+		List<TopCode> spot_eList = new ArrayList<TopCode>();
+		spots = TopCodeSorter.sortHorizontally(spots);
+		if(spots.size()==4){
+			TopCode spot1 = spots.get(0);
+			TopCode spot2 = spots.get(1);
+			TopCode spot3 = spots.get(2);
+			TopCode spot4 = spots.get(3);
+			if(isMissingSpotInTheMiddle(spot1, spot2)){		//|s1|P1|s2|s3|s4|
+				spot_eList.add(getMissingMiddleSpot(spot1, spot2));
+			}else if(isMissingSpotInTheMiddle(spot2, spot3)){	//|s1|s2|P1|s3|s4|
+				spot_eList.add(getMissingMiddleSpot(spot2, spot3));
+			}else if(isMissingSpotInTheMiddle(spot3, spot4)){	//|s1|s2|s3|P1|s4|
+				spot_eList.add(getMissingMiddleSpot(spot3, spot4));
+			}else{
+				List<TopCode> outerProjected = getOuterProjectedSpots(spot1, spot4);
+				TopCode cached = getSpotFromCache(outerProjected.get(0));  //try to find most left spot
+				if(cached!=null){								//|P1|s1|s2|s3|s4|
+					spot_eList.add(cached);	
+				}else{
+					cached = getSpotFromCache(outerProjected.get(1));  ////try to find most right spot
+					if(cached!=null){
+						spot_eList.add(cached);					//|s1|s2|s3|s4|P1|
+					}else{	
+						spot_eList.add(outerProjected.get(0));	//lets use most left projected point |P1|s1|s2|s3|s4|
+					}
+				}
+			}
+		}else if(spots.size()==3){
+			TopCode spot1 = spots.get(0);
+			TopCode spot2 = spots.get(1);
+			TopCode spot3 = spots.get(2);
+			spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, spot3));
+		}else if(spots.size()==2){
+			/*This can be improved, we are using a cached spot as "visible" but sometimes the position and orientation of the cached spots is not perfect*/
+			TopCode spot1 = spots.get(0);
+			TopCode spot2 = spots.get(1);
+			spot_eList.addAll(getThreeMissingSpotsInBlock5EstimatingOne(spot1, spot2));
+		}else if(spots.size()==1){
+			/*This can be improved, we are using a cached spot as "visible" but sometimes the position and orientation of the cached spots is not perfect*/
+			TopCode spot1 = spots.get(0);
+			List<TopCode> projectedSpots = getProjectedSpots(spot1);
+			TopCode cached = getSpotFromCache(projectedSpots.get(0));
+			TopCode estimated;
+			if(cached!=null){
+				estimated=cached;
+			}else{
+				cached = getSpotFromCache(projectedSpots.get(1));
+				if(cached!=null){
+					estimated=cached;
+				}else{
+					estimated = projectedSpots.get(0);
+				}
+			}
+			spot_eList.addAll(getThreeMissingSpotsInBlock5EstimatingOne(spot1,estimated));
+		}
+		return spot_eList;
+	}
+
+	/**
+	 * 	 * Receives 2 visible spots of a block of type 5. Search one more spot in cache or use one of the projections
+	 * and then computes the 2 missing spots
+	 * @param spot1
+	 * @param spot2
+	 * @return
+	 */
+	private List<TopCode> getThreeMissingSpotsInBlock5EstimatingOne(TopCode spot1, TopCode spot2) {
+		List<TopCode> spot_eList = new ArrayList<TopCode>();
+		if(isMissingSpotInTheMiddle(spot1, spot2)){ //there is at least one spots in the middle, so at least we should find a cached projected spot
+			List<TopCode> projectedSpots = getProjectedSpots(spot1);
+			projectedSpots.addAll(getProjectedSpots(spot2));		
+			TopCode cached = getSpotFromCache(projectedSpots);
+			if(cached!=null){
+				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
+			}else{		//this case is weird, we will use the most left projected spot as visible
+				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, projectedSpots.get(0)));
+			}
+		}else{ //there isn't spot in the middle, so will search the outer projected spots
+			List<TopCode> outerProjectedSpots = getOuterProjectedSpots(spot1, spot2);
+			TopCode cached = getSpotFromCache(outerProjectedSpots);
+			if(cached!=null){
+				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
+			}else{		// we didn't find the outer spots in cache, let's search the most outer spots: |?|x|s1|s2|x|?|
+				TopCode left = outerProjectedSpots.get(0);
+				TopCode right = outerProjectedSpots.get(1);
+				Point deltas = getDeltas(left);
+				TopCode mostLeftProjectedSpot = getLeftProjectedSpot(left, deltas.x, deltas.y);
+				TopCode mostRightProjectedSpot = getRightProjectedSpot(right, deltas.x, deltas.y);
+				cached = getSpotFromCache(mostLeftProjectedSpot);
+				if(cached!=null){
+					spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
+				}else{
+					cached = getSpotFromCache(mostRightProjectedSpot);
+					if(cached!=null){
+						spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
+					}else{ //this case is weird, we will use the left outer projected spot as visible
+						spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, left));
+					}
+				}					
+			}
+		}
+		return spot_eList;
+	}
+
+	/**
+	 * Receives 3 visible spots of a block of type 5 and returns the 2 missing spots
+	 * @param spot1
+	 * @param spot2
+	 * @param spot3
+	 * @return 2 missing spots of a block of type 5
+	 */
+	private  List<TopCode> getTwoMissingSpotsInBlock5(TopCode spot1, TopCode spot2, TopCode spot3) {
+		List<TopCode> spot_eList = new ArrayList<TopCode>();
+		if(isMissingSpotInTheMiddle(spot1, spot2)){			//|?|s1|?|?|s2|?|s3|?
+			if(areTwoMissingSpotInTheMiddle(spot1, spot2)){	//|s1|p1|p2|s2|s3|
+				//case B1									//--|s1|p1|p2|s2|s3|--
+				Point deltas = getDeltas(spot1);
+				TopCode rightProjectedSpot = getRightProjectedSpot(spot1, deltas.x, deltas.y);
+				TopCode cachedRight = getSpotFromCache(rightProjectedSpot);
+				deltas = getDeltas(spot2);
+				TopCode leftProjectedSpot = getLeftProjectedSpot(spot2, deltas.x, deltas.y);
+				TopCode cachedLeft = getSpotFromCache(leftProjectedSpot);
+				if(cachedRight!=null && cachedLeft!=null){	//B1-->  --|s1|p1|p2|s2|s3|--
+					spot_eList.add(cachedRight); //p1
+					spot_eList.add(cachedLeft);  //p2
+				}else if(cachedRight!=null){  //didn't found p2, let's use the projected point
+					spot_eList.add(cachedRight); //p1
+					spot_eList.add(leftProjectedSpot); //p2
+				}else if(cachedLeft!=null){//didn't found p1, let's use the projected point
+					spot_eList.add(rightProjectedSpot); //p1
+					spot_eList.add(cachedLeft); //p2
+				}else{						//weird, we didn't find p1 and p2. Let's use the projections
+					spot_eList.add(rightProjectedSpot);
+					spot_eList.add(leftProjectedSpot);
+				}
+			}else{											//|?|s1|p1|s2|?|s3|?
+				if(isMissingSpotInTheMiddle(spot2, spot3)){	//--|s1|p1|s2|p2|s3|--
+					//case C
+					Point deltas = getDeltas(spot1);
+					TopCode rightProjectedSpot = getRightProjectedSpot(spot1, deltas.x, deltas.y);
+					TopCode cachedRight = getSpotFromCache(rightProjectedSpot);
+					
+					deltas = getDeltas(spot2);
+					TopCode rightProjectedSpot2 = getRightProjectedSpot(spot2, deltas.x, deltas.y);
+					TopCode cachedRight2 = getSpotFromCache(rightProjectedSpot2);
+					if(cachedRight!=null && cachedRight2!=null){	//--|s1|p1|s2|p2|s3|--
+						spot_eList.add(cachedRight);
+						spot_eList.add(cachedRight2);
+					}else if(cachedRight!=null){			// we are missing this spot : |s1|p1|s2|x|s3|, let's use the projection
+						spot_eList.add(cachedRight);
+						spot_eList.add(rightProjectedSpot2);
+					}else if(cachedRight2!=null){			// we are missing this spot : |s1|x|s2|p1|s3|, let's use the projection
+						spot_eList.add(rightProjectedSpot);
+						spot_eList.add(cachedRight2);
+					}else{									//we are missing both spots |s1|x|s2|x|s3| but we know that between s1-s2 and s2-s3 
+						spot_eList.add(rightProjectedSpot);	//there are spots. So, we will use the projections
+						spot_eList.add(rightProjectedSpot2);
+					}
+				}else{
+					//possible cases: 	D2 -> |p2|s1|p1|s2|s3| , D3-> |s1|p1|s2|s3|p2|
+					List<TopCode> projectedSpots= getProjectedSpots(spot1);
+					TopCode cachedLeft = getSpotFromCache(projectedSpots.get(0));
+					TopCode cachedRight = getSpotFromCache(projectedSpots.get(1));
+					if(cachedRight!=null){
+						spot_eList.add(cachedRight);
+					}else{											//we know that between spot1 and spot2 there is an spot, so we will use the projection 
+						spot_eList.add(projectedSpots.get(1));		// if we didn't find it in cache
+					}
+					if(cachedLeft!=null){		//D2 -> |p2|s1|p1|s2|s3| 
+						spot_eList.add(cachedLeft);
+					}else{
+						//let's test this config: D3-> |s1|p1|s2|s3|p2|
+						Point deltas = getDeltas(spot3);
+						TopCode mostRightProjection = getRightProjectedSpot(spot3, deltas.x, deltas.y);
+						TopCode cachedMostRight = getSpotFromCache(mostRightProjection);
+						if(cachedMostRight!=null){
+							spot_eList.add(cachedMostRight); //D3-> |s1|p1|s2|s3|p2|
+						}else{		//we are missing one spot, let's use this configuration arbitrarily |s1|p1|s2|s3|p2|
+							spot_eList.add(mostRightProjection);
+						}
+					}
+				}
+			}
+		}else if(isMissingSpotInTheMiddle(spot2, spot3)){	//|?|s1|s2|?|?|s3|?
+			if(areTwoMissingSpotInTheMiddle(spot2, spot3)){	//|s1|s2|p1|p2|s3|
+				//caso B2									//--|s1|s2|p1|p2|s3|--
+				Point deltas = getDeltas(spot2);
+				TopCode rightProjectedSpot = getRightProjectedSpot(spot2, deltas.x, deltas.y);
+				TopCode cachedRight = getSpotFromCache(rightProjectedSpot);
+				deltas = getDeltas(spot3);
+				TopCode leftProjectedSpot = getLeftProjectedSpot(spot3, deltas.x, deltas.y);
+				TopCode cachedLeft = getSpotFromCache(leftProjectedSpot);
+				if(cachedRight!=null && cachedLeft!=null){		//--|s1|s2|p1|p2|s3|--
+					spot_eList.add(cachedRight);
+					spot_eList.add(cachedLeft);
+				}else if(cachedRight!=null){ //we are missing this point --|s1|s2|p1|x|s3|--, let's use the projection
+					spot_eList.add(cachedRight);
+					spot_eList.add(leftProjectedSpot);
+				}else if(cachedLeft!=null){ //we are missing this point --|s1|s2|x|p1|s3|--, let's use the projection
+					spot_eList.add(rightProjectedSpot);
+					spot_eList.add(cachedLeft);
+				}else{					//weird, we didn't find p1 and p2. Let's use the projections
+					spot_eList.add(rightProjectedSpot);
+					spot_eList.add(leftProjectedSpot);
+				}
+			}else{	
+				//possible cases: // D4-> |p2|s1|s2|p1|s3| , D1-> |s1|s2|p1|s3|p2|
+				List<TopCode> projectedSpotsSpot3 = getProjectedSpots(spot3);
+				TopCode leftCached = getSpotFromCache(projectedSpotsSpot3.get(0));
+				TopCode rightCached = getSpotFromCache(projectedSpotsSpot3.get(1));
+				if(leftCached!=null){
+					spot_eList.add(leftCached);
+				}else{															//we know that between spot1 and spot2 there is an spot, so we will use the projection 
+					spot_eList.add(projectedSpotsSpot3.get(1));		// if we didn't find it in cache
+				}
+				if(rightCached!=null){
+					spot_eList.add(rightCached);		//D1-> |s1|s2|p1|s3|p2|
+				}else{
+					//let's test D4-> |p2|s1|s2|p1|s3|
+					Point deltas = getDeltas(spot1);
+					TopCode mostLeftProjectedSpot = getLeftProjectedSpot(spot1, deltas.x,deltas.y);
+					TopCode cachedMostLeftSpot = getSpotFromCache(mostLeftProjectedSpot);
+					if(cachedMostLeftSpot!=null){
+						spot_eList.add(cachedMostLeftSpot); // D4-> |p2|s1|s2|p1|s3|
+					}else{
+						spot_eList.add(mostLeftProjectedSpot);	//we are missing one spot, let's use this configuration arbitrarily |p2|s1|s2|p1|s3|
+					}
+				}
+			}
+		}else{											//no missing spots in the middle	
+			//possible cases A1 -> |p1|p2|s1|s2|s3|, A2 -> |s1|s2|s3|p1|p2|, A3 -> |p1|s1|s2|s3|p2|
+			Point deltas = getDeltas(spot1);
+			TopCode leftProjected1 = getLeftProjectedSpot(spot1, deltas.x, deltas.y);
+			TopCode cachedLeft = getSpotFromCache(leftProjected1);
+			if(cachedLeft!=null){
+				//possible cases: A1 -> |p1|p2|s1|s2|s3|,  A3 -> |p1|s1|s2|s3|p2|
+				spot_eList.add(cachedLeft);
+				deltas = getDeltas(spot3);
+				TopCode rightProjected = getRightProjectedSpot(spot3, deltas.x, deltas.y);
+				TopCode cachedRight = getSpotFromCache(rightProjected);
+				if(cachedRight!=null){
+					spot_eList.add(cachedRight);	//--|p1|s1|s2|s3|p2|--
+				}else{
+					//let's test A1 -> |p1|p2|s1|s2|s3|
+					deltas = getDeltas(leftProjected1);
+					TopCode leftProjected2 = getLeftProjectedSpot(leftProjected1, deltas.x, deltas.y);
+					TopCode cachedLeft2 = getSpotFromCache(leftProjected2);
+					if(cachedLeft2!=null){
+						spot_eList.add(cachedLeft2);	//--|p1|p2|s1|s2|s3|--
+					}else{					//weird, we are missing one spot. Let's use this configuration arbitrarily |p1|p2|s1|s2|s3|  
+						spot_eList.add(leftProjected2);
+					}
+				}
+			}else{			//it should be A2 -> |s1|s2|s3|p1|p2|
+				deltas = getDeltas(spot3);
+				TopCode rightProjected1 = getRightProjectedSpot(spot3, deltas.x, deltas.y);
+				TopCode cachedRight1 = getSpotFromCache(rightProjected1);
+				deltas = getDeltas(rightProjected1);
+				TopCode rightProjected2 = getRightProjectedSpot(rightProjected1, deltas.x, deltas.y);
+				TopCode cachedRight2 = getSpotFromCache(rightProjected2);
+				if(cachedRight1!=null && cachedRight2!=null){
+					spot_eList.add(cachedRight1);
+					spot_eList.add(cachedRight2);
+				}else if(cachedRight1!=null){
+					//we are missing one spot. Let's use configuration arbitrarily |p1|s1|s2|s3|p2|
+					spot_eList.add(cachedRight1);
+					spot_eList.add(leftProjected1);
+				}else if(cachedRight2!=null){					//we are missing this spot: |s1|s2|s3|x|p1| , let's assume that it is there anyway
+					spot_eList.add(rightProjected1);
+					spot_eList.add(cachedRight2);
+				}else{										//weird, we didn't find p1 and p2. Let's use this configuration arbitrarily |p1|s1|s2|s3|p2|
+					deltas = getDeltas(spot1);
+					spot_eList.add(getLeftProjectedSpot(spot1, deltas.x,deltas.y));
+					spot_eList.add(rightProjected1);
+				}
+			}
+		}
+		return spot_eList;
+	}
+	
+	
 	private Point getDeltas(TopCode spot){
 		double hyp = interspot_distance*spot.unit;
 		double alpha = spot.orientation -HORIZONTAL_INITIAL_ROTATION_RADIANS; //Math.sin and Math.cos receives the angle in radians!!! 
@@ -631,6 +923,7 @@ public abstract class TopCodeDetector {
 		Point ret = new Point(dx, dy);
 		return ret;
 	}
+	
 	/**
 	 * Returns middle spot in the middle of spot1 and spot2.
 	 * If there isn't a middle spot in cache, returns a  new spot with 
@@ -680,9 +973,7 @@ public abstract class TopCodeDetector {
 		Arrays.sort(arrayy);
 		
 		if(arrayx.length % 2 ==0){
-//			res.x = ((float)arrayx[arrayx.length/2] + (float)arrayx[arrayx.length/2 -1])/2; 
-//			res.y = ((float)arrayy[arrayy.length/2] + (float)arrayy[arrayy.length/2 -1])/2; 
-			res.x = ( (Float)arrayx[arrayx.length/2] + (Float)arrayx[arrayx.length/2 -1])/2; 
+			res.x = ((Float)arrayx[arrayx.length/2] + (Float)arrayx[arrayx.length/2 -1])/2; 
 			res.y = ((Float)arrayy[arrayy.length/2] + (Float)arrayy[arrayy.length/2 -1])/2; 
 
 		}else{

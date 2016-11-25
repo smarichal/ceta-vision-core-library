@@ -2,7 +2,6 @@ package edu.ceta.vision.android.topcode;
 
 import java.util.Set;
 
-
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -12,6 +11,7 @@ import android.graphics.Bitmap;
 import edu.ceta.vision.core.blocks.Block;
 import edu.ceta.vision.core.topcode.TopCode;
 import edu.ceta.vision.core.topcode.TopCodeDetector;
+import edu.ceta.vision.core.utils.Logger;
 
 public class TopCodeDetectorAndroid extends TopCodeDetector {
 
@@ -62,6 +62,7 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 	}
 	
 	public Set<Block> detectBlocks(Mat rgbaImage){
+		Logger.error("detectBlocks!");
 		bmp = Bitmap.createBitmap(rgbaImage.cols(), rgbaImage.rows(), Bitmap.Config.ARGB_8888);
 		Utils.matToBitmap(rgbaImage, bmp);
 		this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp);
