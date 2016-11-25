@@ -24,6 +24,7 @@ public class Block {
 
 	private int type;
 	private int value;
+	private int spotsId;
 	
 	public Block(int value) {
 		super();
@@ -38,6 +39,7 @@ public class Block {
 		this.height = size.height;
 		this.width = size.width;
 		this.vertices = vertices;
+		this.spotsId = -1;
 	}
 
 	public Point getCenter() {
@@ -94,6 +96,9 @@ public class Block {
 
 	public void setSpots(List<TopCode> spots) {
 		this.spots = spots;
+		if(spots!=null && spots.size()>0){
+			this.spotsId=spots.get(0).getCode();
+		}
 	}
 
 	public int getValue() {
@@ -110,6 +115,10 @@ public class Block {
 
 	public void setOrientation(float orientation) {
 		this.orientation = orientation;
+	}
+	
+	public int getId(){
+		return this.spotsId;
 	}
 	
 	
