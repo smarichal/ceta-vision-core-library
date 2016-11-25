@@ -15,7 +15,7 @@ public class TopcodeGameTestActivity extends AndroidApplication {
 			AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
 			initialize(new TopcodeGameTest(), config);
 			boolean use_native_scanner = false;
-			TopCodeDetectorAndroid detector = new TopCodeDetectorAndroid(40, false, 70, 5, true, false, use_native_scanner);
+			TopCodeDetectorAndroid detector = new TopCodeDetectorAndroid(40, false, 70, 5, true, false, use_native_scanner, true);
 
 
 	}

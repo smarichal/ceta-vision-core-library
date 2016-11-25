@@ -41,6 +41,7 @@ public abstract class TopCodeDetector {
 	protected double interspot_distance ; //In spot.units
 	
 	private boolean allow_different_spot_distance;
+	protected boolean multiple_markers_per_block = true;
 	private boolean interspot_distance_computed;
 	private int adjust_interspot_distance_count; 
 	private static int PROBABLE_AREA_SIDE = 30;
@@ -51,8 +52,21 @@ public abstract class TopCodeDetector {
 	private static int HORIZONTAL_INITIAL_ROTATION_DEGREES = -4;
 	private static float HORIZONTAL_INITIAL_ROTATION_RADIANS = -0.07249829f;
 
-	public TopCodeDetector(int max_markers, boolean probMode, int max_marker_diameter, 
-			int size_cache, boolean cacheEnabled,boolean allow_different_spot_distance){
+	/**
+	 * 
+	 * @param max_markers Max number of markers allowed
+	 * @param probMod: deprecated
+	 * @param size_cache: number of frames used in cache
+	 * @param cacheEnabled : enabling cache allows the detector to infer the position of the non visible markers and 
+	 * 						therefore compute more accuratelly the position and orientation of a block that is partially occluded
+	 * @param allow_different_spot_distance: Indicates if it is possible to have markers of different sizes in different blocks. 
+	 * 										 The default and recommended value is false.
+	 * @param multiple_markers_per_block: Indicates if there are multiple markers within a block or just one marker per block. 
+	 * 									 Using multiple markers is computationally more expensive but leads to better results of the 
+	 * 									detection algorithm. 
+	 */
+	public TopCodeDetector(int max_markers, boolean probMode, 
+			int size_cache, boolean cacheEnabled,boolean allow_different_spot_distance,boolean multiple_markers_per_block){
 		this.stateMatrix = new Matrix(max_markers);
 		this.step = 0.5;
 		this.probMode = probMode;
@@ -65,6 +79,7 @@ public abstract class TopCodeDetector {
 		this.interspot_distance = DEFAULT_INTERSPOT_DISTANCE;
 		this.interspot_distance_computed=false;
 		this.adjust_interspot_distance_count = 0;
+		this.multiple_markers_per_block = multiple_markers_per_block;
 	}
 	
 	protected void groupMarkers(){
@@ -129,7 +144,69 @@ public abstract class TopCodeDetector {
 		return ret;
 	}
 
-	protected void computeBlocks(){
+	
+	protected void computeSingleMarkersBlocks(){
+		this.blocks.clear();
+		ArrayList<TopCode> accumulatedSpots = new ArrayList<TopCode>();
+		for(Iterator<TopCode> iter = this.markers.iterator();iter.hasNext();){
+			TopCode spot = iter.next();
+			Block block = computeSingleMarkerBlock(spot);
+			if(block!=null){
+				this.blocks.add(block);
+				accumulatedSpots.addAll(block.getSpots());
+			}else{
+				Logger.warning("Unrecognized block! marker value= " + spot.getCode());
+			}
+		}
+	}
+	
+	private Block computeSingleMarkerBlock(TopCode spot) {
+		Block block = null;
+		int markerCode = spot.getCode();
+		int type = -1;
+		if(BlocksMarkersMap.belongsToBlockClass(1, markerCode)){
+			block = new Block(1);
+			type = 1;
+		}else if(BlocksMarkersMap.belongsToBlockClass(2, markerCode)){
+			block = new Block(2);
+			type = 2;
+		}else if(BlocksMarkersMap.belongsToBlockClass(3, markerCode)){
+			block = new Block(3);
+			type = 3;
+		}else if(BlocksMarkersMap.belongsToBlockClass(4, markerCode)){
+			block = new Block(4);
+			type = 4;
+		}else if(BlocksMarkersMap.belongsToBlockClass(5, markerCode)){
+			block = new Block(5);
+			type = 5;
+		}
+		if(block!=null){
+			block.setType(type);
+			block.setSpots(markers);
+			block.setOrientation(computeBlockOrientation(block));
+			Point widthAndHeight = computeWidthAndHeightSinglemarkerBlock(block);
+			block.setArea(widthAndHeight.x*widthAndHeight.y);
+			block.setWidth(widthAndHeight.x);
+			block.setHeight(widthAndHeight.y);
+			block.setCenter(computeCenterSingleMarkerBlock(spot, block.getType()));
+		}
+		return block;
+	}
+
+	private Point computeCenterSingleMarkerBlock(TopCode spot, int type) {
+		if(type==1){
+			return new Point(spot.x,spot.y);
+		}else{
+			Point deltas = getDeltas(spot, type-1);
+			TopCode rightExtremePoint = getRightProjectedSpot(spot, deltas.x,deltas.y);
+			List<TopCode> list = new ArrayList<TopCode>();
+			list.add(spot);
+			list.add(rightExtremePoint);
+			return getMiddlePoint(list);
+		}
+	}
+
+	protected void computeMultiMarkersBlocks(){
 		this.blocks.clear();
 		ArrayList<TopCode> accumulatedSpots = new ArrayList<TopCode>();
 		Set<Entry<Integer, List<TopCode>>> map=  this.groupedMarkers.entrySet();
@@ -177,7 +254,7 @@ public abstract class TopCodeDetector {
 			block.setType(type);
 			block.setSpots(markers);
 			block.setOrientation(computeBlockOrientation(block));
-			Point widthAndHeight = computeWidthAndHeight(block);
+			Point widthAndHeight = computeWidthAndHeightMultimarkerBlock(block);
 			block.setArea(widthAndHeight.x*widthAndHeight.y);
 			block.setWidth(widthAndHeight.x);
 			block.setHeight(widthAndHeight.y);
@@ -710,9 +787,9 @@ public abstract class TopCodeDetector {
 			if(cached!=null){
 				spot_eList.add(cached);
 				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
-			}else{		//this case is weird, we will use the most left projected spot as visible
-				spot_eList.add(projectedSpots.get(0));
-				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, projectedSpots.get(0)));
+			}else{		//this case is weird, we will use one of the spots in the middle visible
+				spot_eList.add(projectedSpots.get(1));
+				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, projectedSpots.get(1)));
 			}
 		}else{ //there isn't spot in the middle, so will search the outer projected spots
 			List<TopCode> outerProjectedSpots = getOuterProjectedSpots(spot1, spot2);
@@ -861,8 +938,8 @@ public abstract class TopCodeDetector {
 				TopCode rightCached = getSpotFromCache(projectedSpotsSpot3.get(1));
 				if(leftCached!=null){
 					spot_eList.add(leftCached);
-				}else{															//we know that between spot1 and spot2 there is an spot, so we will use the projection 
-					spot_eList.add(projectedSpotsSpot3.get(1));		// if we didn't find it in cache
+				}else{															//we know that between spot2 and spot3 there is an spot, so we will use the projection 
+					spot_eList.add(projectedSpotsSpot3.get(0));		// if we didn't find it in cache
 				}
 				if(rightCached!=null){
 					spot_eList.add(rightCached);		//D1-> |s1|s2|p1|s3|p2|
@@ -930,13 +1007,17 @@ public abstract class TopCodeDetector {
 	}
 	
 	
-	private Point getDeltas(TopCode spot){
-		double hyp = interspot_distance*spot.unit;
+	private Point getDeltas(TopCode spot, int number_of_spots){
+		double hyp = interspot_distance*spot.unit*number_of_spots;
 		double alpha = spot.orientation -HORIZONTAL_INITIAL_ROTATION_RADIANS; //Math.sin and Math.cos receives the angle in radians!!! 
 		double dy = hyp*Math.sin(alpha);
 		double dx = hyp*Math.cos(alpha);
 		Point ret = new Point(dx, dy);
 		return ret;
+	}
+	
+	private Point getDeltas(TopCode spot){
+		return getDeltas(spot, 1);
 	}
 	
 	/**
@@ -1169,7 +1250,15 @@ public abstract class TopCodeDetector {
 	}
 	
 	
-	private Point computeWidthAndHeight(Block block){
+	private Point computeWidthAndHeightSinglemarkerBlock(Block block){
+		double w=0,h=0;
+		h = block.getSpots().get(0).getDiameter();
+		w = h*block.getType();
+		return new Point(w, h);
+	}
+		
+	
+	private Point computeWidthAndHeightMultimarkerBlock(Block block){
 		List<TopCode> spots = block.getSpots();
 		TopCode spot1;
 		double distance;
@@ -1198,6 +1287,13 @@ public abstract class TopCodeDetector {
 			spots = TopCodeSorter.sortHorizontally(block.getSpots());
 			spot1 =spots.get(0);
 			distance = getDistance(spot1, spots.get(3));
+			w = (float)(distance + spot1.getDiameter());
+			h= spot1.getDiameter();
+			break;
+		case 5:
+			spots = TopCodeSorter.sortHorizontally(block.getSpots());
+			spot1 =spots.get(0);
+			distance = getDistance(spot1, spots.get(4));
 			w = (float)(distance + spot1.getDiameter());
 			h= spot1.getDiameter();
 			break;

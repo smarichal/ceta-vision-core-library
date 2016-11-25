@@ -11,8 +11,8 @@ public class TopCodeDetectorDesktop extends TopCodeDetector{
 	private BufferedImage image;
 	
 	public TopCodeDetectorDesktop(int max_markers, boolean probMode,int max_marker_diameter, 
-				int size_cache, boolean cacheEnabled,boolean allow_different_spot_distance) {
-		super(max_markers, probMode, max_marker_diameter, size_cache, cacheEnabled, allow_different_spot_distance);
+				int size_cache, boolean cacheEnabled,boolean allow_different_spot_distance, boolean multiple_markers_per_block) {
+		super(max_markers, probMode, size_cache, cacheEnabled, allow_different_spot_distance, multiple_markers_per_block);
 		this.scanner = new ScannerDesktop();
 		if(max_marker_diameter>0){
 			this.scanner.setMaxCodeDiameter(max_marker_diameter);
@@ -24,15 +24,19 @@ public class TopCodeDetectorDesktop extends TopCodeDetector{
 		this.image = rgbaImage;
 		this.markers = ((ScannerDesktop)this.scanner).scan(image);
         groupMarkers();
-        computeBlocks();
+        computeMultiMarkersBlocks();
         return this.blocks;
 	}
 	
 	public Set<Block> detectBlocks(String file){
 		try {
 			this.markers = ((ScannerDesktop)this.scanner).scan(file);
-			groupMarkers();
-	        computeBlocks();
+			if(multiple_markers_per_block){
+		        groupMarkers();
+		        computeMultiMarkersBlocks();
+			}else{
+				computeSingleMarkersBlocks();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

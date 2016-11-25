@@ -19,8 +19,8 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 	protected Bitmap bmp;
 	
 	public TopCodeDetectorAndroid(int max_markers, boolean probMode, int max_marker_diameter, 
-								int size_cache, boolean cacheEnabled, boolean allow_different_spot_distance, boolean use_native_scanner){
-		super(max_markers, probMode, max_marker_diameter, size_cache, cacheEnabled, allow_different_spot_distance);
+								int size_cache, boolean cacheEnabled, boolean allow_different_spot_distance, boolean use_native_scanner,boolean multiple_markers_per_block){
+		super(max_markers, probMode,size_cache, cacheEnabled, allow_different_spot_distance, multiple_markers_per_block);
 		if(use_native_scanner){
 			this.scanner = new ScannerAndroidNative();
 		}else{
@@ -32,43 +32,18 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 		Point p = new Point(3, 3);
 	}
 	
-	public Set<TopCode> update(Mat rgbaImage){
-		bmp = Bitmap.createBitmap(rgbaImage.cols(), rgbaImage.rows(), Bitmap.Config.ARGB_8888);
-		Utils.matToBitmap(rgbaImage, bmp);
-		this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp);
-		if(probMode){
-        	this.stateMatrix.updateAllProbs(this.markers, step);
-        }else{
-        	this.stateMatrix.addAll(this.markers);
-        }
-		bmp.recycle();
-        
-		return stateMatrix.getStateMarkers();
-	}
-	
-	@Deprecated
-	public Set<TopCode> update(Bitmap bitmapImg){
-		bmp = bitmapImg;
-		this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp);
-		if(probMode){
-        	this.stateMatrix.updateAllProbs(this.markers, step);
-        }else{
-        	this.stateMatrix.addAll(this.markers);
-        }
-		return stateMatrix.getStateMarkers();
-	}
-	public void dummy(){
-		
-	}
-	
 	public Set<Block> detectBlocks(Mat rgbaImage){
 		Logger.error("detectBlocks!");
 		bmp = Bitmap.createBitmap(rgbaImage.cols(), rgbaImage.rows(), Bitmap.Config.ARGB_8888);
 		Utils.matToBitmap(rgbaImage, bmp);
 		this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp);
 		bmp.recycle();
-        groupMarkers();
-        computeBlocks();
+		if(multiple_markers_per_block){
+	        groupMarkers();
+	        computeMultiMarkersBlocks();
+		}else{
+			computeSingleMarkersBlocks();
+		}
         return this.blocks;
 	}
 	
