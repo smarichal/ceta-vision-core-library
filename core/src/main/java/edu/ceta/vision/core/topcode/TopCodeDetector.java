@@ -688,6 +688,7 @@ public abstract class TopCodeDetector {
 					estimated = projectedSpots.get(0);
 				}
 			}
+			spot_eList.add(estimated);
 			spot_eList.addAll(getThreeMissingSpotsInBlock5EstimatingOne(spot1,estimated));
 		}
 		return spot_eList;
@@ -707,14 +708,17 @@ public abstract class TopCodeDetector {
 			projectedSpots.addAll(getProjectedSpots(spot2));		
 			TopCode cached = getSpotFromCache(projectedSpots);
 			if(cached!=null){
+				spot_eList.add(cached);
 				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
 			}else{		//this case is weird, we will use the most left projected spot as visible
+				spot_eList.add(projectedSpots.get(0));
 				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, projectedSpots.get(0)));
 			}
 		}else{ //there isn't spot in the middle, so will search the outer projected spots
 			List<TopCode> outerProjectedSpots = getOuterProjectedSpots(spot1, spot2);
 			TopCode cached = getSpotFromCache(outerProjectedSpots);
 			if(cached!=null){
+				spot_eList.add(cached);
 				spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
 			}else{		// we didn't find the outer spots in cache, let's search the most outer spots: |?|x|s1|s2|x|?|
 				TopCode left = outerProjectedSpots.get(0);
@@ -724,12 +728,15 @@ public abstract class TopCodeDetector {
 				TopCode mostRightProjectedSpot = getRightProjectedSpot(right, deltas.x, deltas.y);
 				cached = getSpotFromCache(mostLeftProjectedSpot);
 				if(cached!=null){
+					spot_eList.add(cached);
 					spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
 				}else{
 					cached = getSpotFromCache(mostRightProjectedSpot);
 					if(cached!=null){
+						spot_eList.add(cached);
 						spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, cached));
 					}else{ //this case is weird, we will use the left outer projected spot as visible
+						spot_eList.add(left);
 						spot_eList.addAll(getTwoMissingSpotsInBlock5(spot1, spot2, left));
 					}
 				}					
@@ -740,12 +747,20 @@ public abstract class TopCodeDetector {
 
 	/**
 	 * Receives 3 visible spots of a block of type 5 and returns the 2 missing spots
-	 * @param spot1
-	 * @param spot2
-	 * @param spot3
+	 * @param s1
+	 * @param s2
+	 * @param s3
 	 * @return 2 missing spots of a block of type 5
 	 */
-	private  List<TopCode> getTwoMissingSpotsInBlock5(TopCode spot1, TopCode spot2, TopCode spot3) {
+	private  List<TopCode> getTwoMissingSpotsInBlock5(TopCode s1, TopCode s2, TopCode s3) {
+		List<TopCode> orderedSpotList = new ArrayList<TopCode>();
+		orderedSpotList.add(s1);
+		orderedSpotList.add(s2);
+		orderedSpotList.add(s3);
+		orderedSpotList = TopCodeSorter.sortHorizontally(orderedSpotList);
+		TopCode spot1 = orderedSpotList.get(0);
+		TopCode spot2 = orderedSpotList.get(1);
+		TopCode spot3 = orderedSpotList.get(2);
 		List<TopCode> spot_eList = new ArrayList<TopCode>();
 		if(isMissingSpotInTheMiddle(spot1, spot2)){			//|?|s1|?|?|s2|?|s3|?
 			if(areTwoMissingSpotInTheMiddle(spot1, spot2)){	//|s1|p1|p2|s2|s3|
