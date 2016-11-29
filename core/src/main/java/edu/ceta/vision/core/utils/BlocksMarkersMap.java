@@ -4,11 +4,14 @@ package edu.ceta.vision.core.utils;
 public class BlocksMarkersMap {
 	
 	
-	public static int[] block1 = {103,47,55,59,61,79,87,91,93,369};
-	public static int[] block2 = {31,107,109,115,117,121,143,151,155,391};
-	public static int[] block3 = {157,167,171,173,179,181,185,199,203,395};
-	public static int[] block4 = {205,211,213,217,227,229,233,241,271,397};
-	public static int[] block5 = {279,283,285,295,299,301,307,309,313,403};
+	public static int[] block1 = {31, 61, 103, 179, 227, 271, 283, 355, 391, 453};
+	public static int[] block2 = {93, 117, 185, 203, 793};
+	public static int[] block3 = {563, 651, 361, 309};
+	public static int[] block4 = {171, 555, 421};
+	public static int[] block5 = {1173, 1189, 677};
+
+	
+	
 	
 	public static boolean belongsToBlockClass(int blockClass, int id){
 		boolean res = false;

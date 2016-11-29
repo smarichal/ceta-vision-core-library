@@ -646,7 +646,8 @@ public class TopCode {
    public boolean equals(Object obj){
 	   if(obj instanceof TopCode){
 		   TopCode t = (TopCode)obj;
-		   return (this.code==t.code && Math.hypot(this.x-t.x, this.y-t.y) < MIN_MARKER_DISTANCE);
+//		   return (this.code==t.code && Math.hypot(this.x-t.x, this.y-t.y) < MIN_MARKER_DISTANCE);
+		   return this.code==t.code;
 	   }else{
 		   return false;
 	   }
