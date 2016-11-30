@@ -1010,6 +1010,15 @@ public abstract class TopCodeDetector {
 	private Point getDeltas(TopCode spot, int number_of_spots){
 		double hyp = interspot_distance*spot.unit*number_of_spots;
 		double alpha = spot.orientation -HORIZONTAL_INITIAL_ROTATION_RADIANS; //Math.sin and Math.cos receives the angle in radians!!! 
+		alpha = Math.abs(alpha);
+		
+		if(alpha>Math.PI/2){
+			if(alpha>(Math.PI*3)/2){
+				alpha = Math.abs(2*Math.PI-alpha);
+			}else{
+				alpha = Math.abs(Math.PI-alpha);
+			}
+		}
 		double dy = hyp*Math.sin(alpha);
 		double dx = hyp*Math.cos(alpha);
 		Point ret = new Point(dx, dy);
@@ -1144,8 +1153,9 @@ public abstract class TopCodeDetector {
 			left=spot2;
 			right=spot1;
 		}
-		Point deltas = getDeltas(spot1);
+		Point deltas = getDeltas(left);
 		TopCode P1 = getLeftProjectedSpot(left,deltas.x,deltas.y);
+		deltas = getDeltas(right);
 		TopCode P2 = getRightProjectedSpot(right,deltas.x,deltas.y);
 		res.add(P1);
 		res.add(P2);
@@ -1155,6 +1165,12 @@ public abstract class TopCodeDetector {
 	private TopCode getRightProjectedSpot(TopCode spot, double dx, double dy) {
 		TopCode rightSpot = new TopCode(spot.code);
 		rightSpot.x =(float)(spot.x + dx);
+		double alpha = Math.abs(spot.orientation);
+		int dy_multiplier = 1;
+		if( (alpha<Math.PI/2) || (alpha>Math.PI && alpha< 3*Math.PI/2)  ){
+			dy_multiplier = -1;
+		}		
+		rightSpot.y = (float)(spot.y + dy*dy_multiplier);
 		rightSpot.y = (float)(spot.y - dy);
 		rightSpot.orientation = spot.orientation;
 		rightSpot.unit = spot.unit;
@@ -1164,7 +1180,13 @@ public abstract class TopCodeDetector {
 	private TopCode getLeftProjectedSpot(TopCode spot, double dx, double dy) {
 		TopCode leftSpot = new TopCode(spot.code);
 		leftSpot.x =(float)(spot.x - dx);
-		leftSpot.y = (float)(spot.y + dy);
+		double alpha = Math.abs(spot.orientation);
+		int dy_multiplier = 1;
+		
+		if( (alpha>Math.PI/2 && alpha< Math.PI) || (alpha>3*Math.PI/2 && alpha< 2*Math.PI)  ){
+			dy_multiplier = -1;
+		}		
+		leftSpot.y = (float)(spot.y + dy*dy_multiplier);
 		leftSpot.orientation = spot.orientation;
 		leftSpot.unit = spot.unit;
 		return leftSpot;
