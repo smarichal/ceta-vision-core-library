@@ -2,6 +2,7 @@ package edu.ceta.vision.core.topcode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -17,6 +18,7 @@ import edu.ceta.vision.core.utils.BlocksMarkersMap;
 import edu.ceta.vision.core.utils.Logger;
 import edu.ceta.vision.core.utils.SpotsCache;
 import edu.ceta.vision.core.utils.TopCodeSorter;
+import edu.ceta.vision.core.utils.TopCodeXComparator;
 
 
 
@@ -30,7 +32,7 @@ public abstract class TopCodeDetector {
 	protected double minLength;
 	protected boolean probMode;
 	
-	
+	private TopCodeXComparator topCodeComparator = new TopCodeXComparator();
 	private SpotsCache cache;
 	private boolean cacheEnabled;
 	
@@ -1145,14 +1147,15 @@ public abstract class TopCodeDetector {
 	 */
 	private List<TopCode> getOuterProjectedSpots(TopCode spot1, TopCode spot2){
 		List<TopCode> res = new ArrayList<TopCode>();
-		TopCode left, right;
-		if(spot1.x<spot2.x){
+		TopCode left, right; 
+		if(topCodeComparator.compare(spot1, spot2)<0){
 			left=spot1;
 			right=spot2;
 		}else{
 			left=spot2;
 			right=spot1;
 		}
+		
 		Point deltas = getDeltas(left);
 		TopCode P1 = getLeftProjectedSpot(left,deltas.x,deltas.y);
 		deltas = getDeltas(right);
@@ -1171,7 +1174,6 @@ public abstract class TopCodeDetector {
 			dy_multiplier = -1;
 		}		
 		rightSpot.y = (float)(spot.y + dy*dy_multiplier);
-		rightSpot.y = (float)(spot.y - dy);
 		rightSpot.orientation = spot.orientation;
 		rightSpot.unit = spot.unit;
 		return rightSpot;
