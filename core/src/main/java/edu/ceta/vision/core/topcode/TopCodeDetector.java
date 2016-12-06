@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
@@ -35,6 +36,7 @@ public abstract class TopCodeDetector {
 	private TopCodeXComparator topCodeComparator = new TopCodeXComparator();
 	private SpotsCache cache;
 	private boolean cacheEnabled;
+	protected Rect detectionZone = null;
 	
 	
 	protected double DEFAULT_INTERSPOT_DISTANCE = 11;
@@ -67,8 +69,8 @@ public abstract class TopCodeDetector {
 	 * 									 Using multiple markers is computationally more expensive but leads to better results of the 
 	 * 									detection algorithm. 
 	 */
-	public TopCodeDetector(int max_markers, boolean probMode, 
-			int size_cache, boolean cacheEnabled,boolean allow_different_spot_distance,boolean multiple_markers_per_block){
+	public TopCodeDetector(int max_markers, boolean probMode, int size_cache, boolean cacheEnabled,
+			boolean allow_different_spot_distance,boolean multiple_markers_per_block, Rect detectionZone){
 		this.stateMatrix = new Matrix(max_markers);
 		this.step = 0.5;
 		this.probMode = probMode;
@@ -82,7 +84,11 @@ public abstract class TopCodeDetector {
 		this.interspot_distance_computed=false;
 		this.adjust_interspot_distance_count = 0;
 		this.multiple_markers_per_block = multiple_markers_per_block;
+		this.detectionZone = detectionZone;
 	}
+	
+	
+	
 	
 	protected void groupMarkers(){
 		this.groupedMarkers.clear();

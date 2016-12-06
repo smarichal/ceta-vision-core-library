@@ -167,7 +167,7 @@ public abstract class Scanner {
 				  // to decide black or white
 				  //----------------------------------------
 				  double f = 0.85;
-				  f = 0.975;
+//				  f = 0.975;
 				  a = (a < threshold * f)? 0 : 1;
 	
 				  //----------------------------------------

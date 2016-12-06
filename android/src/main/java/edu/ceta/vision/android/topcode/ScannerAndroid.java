@@ -126,4 +126,5 @@ public class ScannerAndroid extends Scanner {
 	   }
 	   return preview;
    }
+   
 }

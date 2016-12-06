@@ -26,8 +26,11 @@ package edu.ceta.vision.android.topcode;
 
 import java.util.List;
 
+import org.opencv.core.Mat;
+
 import edu.ceta.vision.core.topcode.Scanner;
 import edu.ceta.vision.core.topcode.TopCode;
+import edu.ceta.vision.core.utils.Logger;
 import android.graphics.Bitmap;
 
 /**
@@ -95,7 +98,17 @@ public class ScannerAndroidNative extends Scanner {
        return findCodes();   // scan for topcodes
    }
 
+   public void scanMat(long rgbaImageAddress) {
+//	   	TopCode[] spots = scanNativeMat(rgbaImage);
+//		Logger.error("&&&&& Native spots found = "+spots.length+"&&&&&");
+	   	int n = scanNativeMat2(rgbaImageAddress);
+		Logger.error("&&&&& Native spots found = "+n+"&&&&&");
+   }
   
+   public native TopCode[] scanNativeMat(long image);
+   public native int scanNativeMat2(long image);
+
+   //public native List<TopCode> scanNative(int[] data, int width, int height);
 
   
   /**
@@ -126,4 +139,7 @@ public class ScannerAndroidNative extends Scanner {
 	   }
 	   return preview;
    }
+
+
+
 }

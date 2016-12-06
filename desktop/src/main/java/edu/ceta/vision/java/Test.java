@@ -29,6 +29,7 @@ import javax.swing.UIManager;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
 import org.opencv.highgui.Highgui;
 
 import edu.ceta.vision.core.blocks.Block;
@@ -74,13 +75,18 @@ public class Test extends JPanel implements KeyListener, WindowListener, MouseLi
 		int size_cache= 5;
 		boolean cacheEnabled = false;
 		boolean allow_different_spot_distance = false;
-		detector = new TopCodeDetectorDesktop(max_markers, prob_mode,max_marker_diameter, size_cache, cacheEnabled, allow_different_spot_distance);
+		boolean multiple_markers_per_block = false;
+		Rect detectionZone =  new Rect(0, 0, 640, 480);
+		detector = new TopCodeDetectorDesktop(max_markers, prob_mode,max_marker_diameter, size_cache, cacheEnabled, 
+						allow_different_spot_distance,multiple_markers_per_block, detectionZone);
 	
 		 // create file list
 		//this.rootDirectory = "/home/seba/phd/CETA/Code/image samples/blocks/";
-		 this.rootDirectory = "/home/seba/phd/CETA/Code/image samples/blocks/4/3visibles/sequences/";
+	//	 this.rootDirectory = "/home/seba/phd/CETA/Code/image samples/blocks/4/3visibles/sequences/";
 		 //this.rootDirectory = "/home/seba/phd/CETA/Code/image samples/blocks/3/320/";
 		 //this.rootDirectory = "/home/seba/phd/CETA/Code/image samples/blocks/2/";
+		 this.rootDirectory = "/home/seba/phd/CETA/Code/image samples/blocks/test/sequences/frames2/";
+		 
 		this.file_index = 0;
 		this.files = (new File(this.rootDirectory)).list(this);
 		
