@@ -24,6 +24,9 @@
  */
 package edu.ceta.vision.android.topcode;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.opencv.core.Mat;
@@ -103,6 +106,11 @@ public class ScannerAndroidNative extends Scanner {
 //		Logger.error("&&&&& Native spots found = "+spots.length+"&&&&&");
 	   	int n = scanNativeMat2(rgbaImageAddress);
 		Logger.error("&&&&& Native spots found = "+n+"&&&&&");
+   }
+   
+   public List<TopCode> scan(Mat greyImage){
+	   TopCode[] array = scanNativeMat(greyImage.getNativeObjAddr());
+	   return new ArrayList<TopCode>(Arrays.asList(array));
    }
   
    public native TopCode[] scanNativeMat(long image);
