@@ -5,11 +5,11 @@ import java.util.Set;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
-import org.opencv.imgproc.Imgproc;
 
 import android.graphics.Bitmap;
 import edu.ceta.vision.core.blocks.Block;
 import edu.ceta.vision.core.topcode.Scanner;
+import edu.ceta.vision.core.topcode.TopCode;
 import edu.ceta.vision.core.topcode.TopCodeDetector;
 import edu.ceta.vision.core.utils.Logger;
 
@@ -40,42 +40,42 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 			return rgbaImage;
 	}
 	
-	public Set<Block> detectBlocks(Mat rgbaImage){
+	public Set<Block> detectBlocks(Mat img){
 		Logger.error("detectBlocks!");
-		//Mat clone = rgbaImage.clone();
-		Mat image = cutImage(rgbaImage);
-		bmp = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
-		Utils.matToBitmap(image, bmp);
-		this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp);
-		
-		
-		/*----------------  PRUEBAS INT ARRAY
-		//byte data[] = new byte[(int)rgbaImage.total()*rgbaImage.channels()];
-		//rgbaImage.get(0, 0,data);
-		
-		/*ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
-		DataInputStream in = new DataInputStream(inputStream);
-		int dataInt[] = new int[(int)rgbaImage.total()];
-		try{
-			for(int i=0;i<dataInt.length;i++){
-				dataInt[i] = in.readInt();
+		 Mat image = cutImage(img);
+		if(this.scanner instanceof ScannerAndroidNative){			
+			//Mat grey = new Mat();
+			//Imgproc.cvtColor(rgb, grey, Imgproc.COLOR_RGBA2GRAY);
+			//nativeScanner.scan(dataInt, rgbaImage.width(), rgbaImage.height());
+			this.markers = ((ScannerAndroidNative)this.scanner).scan(image);
+			Logger.error("$$$$$$$$ markers found JavaScanner = " + this.markers.size() + " $$$$$$$$$");
+		}else{
+			bmp = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
+			Utils.matToBitmap(image, bmp);
+			this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp);
+			
+			
+			/*----------------  PRUEBAS INT ARRAY
+			//byte data[] = new byte[(int)rgbaImage.total()*rgbaImage.channels()];
+			//rgbaImage.get(0, 0,data);
+			
+			/*ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
+			DataInputStream in = new DataInputStream(inputStream);
+			int dataInt[] = new int[(int)rgbaImage.total()];
+			try{
+				for(int i=0;i<dataInt.length;i++){
+					dataInt[i] = in.readInt();
+				}
+			}catch(IOException e){
+				e.printStackTrace();
 			}
-		}catch(IOException e){
-			e.printStackTrace();
+			
+			this.markers = ((ScannerAndroid)this.scanner).scan(dataInt, rgbaImage.width(), rgbaImage.height());
+			----------------------------   */
+	
+			
+//			bmp.recycle();
 		}
-		
-		this.markers = ((ScannerAndroid)this.scanner).scan(dataInt, rgbaImage.width(), rgbaImage.height());
-		----------------------------   */
-
-		/*------------- PRUEBAS SCANNER NATIVO ---------------*/
-		/*Logger.error("$$$$$$$$ markers found JavaScanner = " + this.markers.size() + " $$$$$$$$$");
-		ScannerAndroidNative nativeScanner = new ScannerAndroidNative();
-		Mat grey = new Mat();
-		Imgproc.cvtColor(clone, grey, Imgproc.COLOR_RGBA2GRAY);
-		//nativeScanner.scan(dataInt, rgbaImage.width(), rgbaImage.height());
-		nativeScanner.scanMat(grey.getNativeObjAddr());
-		*/
-		bmp.recycle();
 		if(multiple_markers_per_block){
 	        groupMarkers();
 	        computeMultiMarkersBlocks();
