@@ -1,5 +1,8 @@
 package edu.ceta.vision.android.topcode;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.Set;
 
 import org.opencv.android.Utils;
@@ -9,7 +12,6 @@ import org.opencv.core.Rect;
 import android.graphics.Bitmap;
 import edu.ceta.vision.core.blocks.Block;
 import edu.ceta.vision.core.topcode.Scanner;
-import edu.ceta.vision.core.topcode.TopCode;
 import edu.ceta.vision.core.topcode.TopCodeDetector;
 import edu.ceta.vision.core.utils.Logger;
 
@@ -47,7 +49,26 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 			//Mat grey = new Mat();
 			//Imgproc.cvtColor(rgb, grey, Imgproc.COLOR_RGBA2GRAY);
 			//nativeScanner.scan(dataInt, rgbaImage.width(), rgbaImage.height());
-			this.markers = ((ScannerAndroidNative)this.scanner).scan(image);
+			boolean isColor = !(img.channels()==1);
+			if(isColor){
+				byte data[] = new byte[(int)img.total()*img.channels()];
+				img.get(0, 0,data);
+
+				ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
+				DataInputStream in = new DataInputStream(inputStream);
+				int dataInt[] = new int[(int)img.total()];
+				try{
+					for(int i=0;i<dataInt.length;i++){
+						dataInt[i] = in.readInt();
+					}
+				}catch(IOException e){
+					e.printStackTrace();
+				}
+				
+				this.markers = ((ScannerAndroidNative)this.scanner).scan(dataInt, img.width(), img.height(), isColor);
+			}else{
+				this.markers = ((ScannerAndroidNative)this.scanner).scan(image, isColor);
+			}
 			Logger.error("$$$$$$$$ markers found JavaScanner = " + this.markers.size() + " $$$$$$$$$");
 		}else{
 			bmp = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
