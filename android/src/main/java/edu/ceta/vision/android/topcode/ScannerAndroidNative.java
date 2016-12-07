@@ -68,21 +68,7 @@ public class ScannerAndroidNative extends Scanner {
    }
 
 
-/**
- * Scan the given image and return a list of all topcodes found in it.
- */
-   public List<TopCode> scan(Bitmap image) {
-	  this.preview = null;
-      this.w       = image.getWidth();
-      this.h       = image.getHeight();
-      if (data == null || data.length < w * h) {
-         this.data  = new int[w * h];
-      }
-      image.getPixels(this.data, 0, w, 0, 0, w, h);
-      
-      threshold();          // run the adaptive threshold filter
-      return findCodes();   // scan for topcodes
-   }
+
    
    /**
     * Scan the given image and return a list of all topcodes found in it.
@@ -100,23 +86,19 @@ public class ScannerAndroidNative extends Scanner {
 	   threshold();          // run the adaptive threshold filter
        return findCodes();   // scan for topcodes
    }
-
-   public void scanMat(long rgbaImageAddress) {
-//	   	TopCode[] spots = scanNativeMat(rgbaImage);
-//		Logger.error("&&&&& Native spots found = "+spots.length+"&&&&&");
-	   	int n = scanNativeMat2(rgbaImageAddress);
-		Logger.error("&&&&& Native spots found = "+n+"&&&&&");
-   }
    
-   public List<TopCode> scan(Mat greyImage){
-	   TopCode[] array = scanNativeMat(greyImage.getNativeObjAddr());
+   public List<TopCode> scan(Mat img, boolean isColorImage){
+	   TopCode[] array = scanNativeMat(img.getNativeObjAddr(), isColorImage);
+	   return new ArrayList<TopCode>(Arrays.asList(array));
+   }
+
+   public List<TopCode> scan(int[] data, int width, int height, boolean isColorImage){
+	   TopCode[] array = scanNativeDataArray(data, isColorImage, width, height);
 	   return new ArrayList<TopCode>(Arrays.asList(array));
    }
   
-   public native TopCode[] scanNativeMat(long image);
-   public native int scanNativeMat2(long image);
-
-   //public native List<TopCode> scanNative(int[] data, int width, int height);
+   public native TopCode[] scanNativeDataArray(int[] data, boolean isColorImage,int width, int height);
+   public native TopCode[] scanNativeMat(long image, boolean isColorImage);
 
   
   /**
