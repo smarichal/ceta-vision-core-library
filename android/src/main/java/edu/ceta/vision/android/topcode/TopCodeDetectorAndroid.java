@@ -42,7 +42,7 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 			return rgbaImage;
 	}
 	
-	public Set<Block> detectBlocks(Mat img){
+	public synchronized Set<Block> detectBlocks(Mat img){
 		Logger.error("detectBlocks!");
 		 Mat image = cutImage(img);
 		if(this.scanner instanceof ScannerAndroidNative){			

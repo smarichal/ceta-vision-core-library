@@ -35,7 +35,7 @@ public class TopCodeDetectorDesktop extends TopCodeDetector{
         return this.blocks;
 	}
 	
-	public Set<Block> detectBlocks(String file){
+	public synchronized Set<Block> detectBlocks(String file){
 		try {
 			this.markers = ((ScannerDesktop)this.scanner).scan(file);
 			if(multiple_markers_per_block){
