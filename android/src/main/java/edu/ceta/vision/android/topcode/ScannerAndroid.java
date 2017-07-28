@@ -26,6 +26,9 @@ package edu.ceta.vision.android.topcode;
 
 import java.util.List;
 
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Pixmap.Format;
+
 import edu.ceta.vision.core.topcode.Scanner;
 import edu.ceta.vision.core.topcode.TopCode;
 import android.graphics.Bitmap;
@@ -65,7 +68,7 @@ public class ScannerAndroid extends Scanner {
 /**
  * Scan the given image and return a list of all topcodes found in it.
  */
-   public List<TopCode> scan(Bitmap image) {
+   public List<TopCode> scan(Bitmap image, double fvalue) {
 	  this.preview = null;
       this.w       = image.getWidth();
       this.h       = image.getHeight();
@@ -74,7 +77,7 @@ public class ScannerAndroid extends Scanner {
       }
       image.getPixels(this.data, 0, w, 0, 0, w, h);
       
-      threshold();          // run the adaptive threshold filter
+      threshold(fvalue);          // run the adaptive threshold filter
       return findCodes();   // scan for topcodes
    }
    
@@ -127,4 +130,30 @@ public class ScannerAndroid extends Scanner {
 	   return preview;
    }
    
+   
+   //TODO Test this method
+   public Pixmap getGdxPreview(){
+	   Pixmap p = new Pixmap(w, h, Format.RGBA8888);
+	   int pixel = 0;
+	   int k = 0;
+	   for (int j=0; j<h; j++) { 
+		   for (int i=0; i<w; i++) {
+			   pixel = (data[k++] >> 24);
+			   if (pixel == 0) {
+				   //pixel = 0xFF000000;
+				   pixel = 0x000000FF;
+			   } else if (pixel == 1) {
+				   pixel = 0xFFFFFFFF;
+			   } else if (pixel == 3) {
+				   //pixel = 0xFF00FF00;
+				   pixel = 0x0000FF00FF;
+			   } else if (pixel == 7) {
+				   //pixel = 0xFFFF0000;
+				   pixel = 0x00FF00FF;
+			   }
+			   p.drawPixel(i, j, pixel);
+		   }
+	   }
+	   return p;
+   }
 }

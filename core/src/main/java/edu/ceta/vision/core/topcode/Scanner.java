@@ -107,7 +107,6 @@ public abstract class Scanner {
 		  return (sum >= 5) ? 1 : 0;
 	  }
 
-
 	  /**
 	   * Perform Wellner adaptive thresholding to produce binary pixel
 	   * data.  Also mark candidate spotcode locations.
@@ -116,6 +115,15 @@ public abstract class Scanner {
 	   * EuroPARC Technical Report EPC-93-110
 	   */
 	  protected void threshold() {
+		  threshold(0.85);
+//		  f = 0.975;
+	  }
+	  
+	  
+	  /**
+	   * smarichal: Same function receiving the f value as a parameter
+	   */
+	  protected void threshold(double f) {
 	
 		  int pixel, r, g, b, a;
 		  int threshold, sum = 128;
@@ -166,8 +174,8 @@ public abstract class Scanner {
 				  // Compare the average sum to current pixel
 				  // to decide black or white
 				  //----------------------------------------
-				  double f = 0.85;
-//				  f = 0.975;
+//				  double f = 0.85;
+////				  f = 0.975;
 				  a = (a < threshold * f)? 0 : 1;
 	
 				  //----------------------------------------

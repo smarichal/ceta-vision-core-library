@@ -42,7 +42,7 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 			return rgbaImage;
 	}
 	
-	public synchronized Set<Block> detectBlocks(Mat img){
+	public synchronized Set<Block> detectBlocks(Mat img, double fvalue){
 		Logger.error("detectBlocks!");
 		 Mat image = cutImage(img);
 		if(this.scanner instanceof ScannerAndroidNative){			
@@ -73,7 +73,7 @@ public class TopCodeDetectorAndroid extends TopCodeDetector {
 		}else{
 			bmp = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
 			Utils.matToBitmap(image, bmp);
-			this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp);
+			this.markers = ((ScannerAndroid)this.scanner).scan(this.bmp, fvalue);
 			
 			
 			/*----------------  PRUEBAS INT ARRAY
