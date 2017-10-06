@@ -15,8 +15,9 @@ public class ShowImage extends Panel {
 	private Graphics graphics;
 	
 	
-	public ShowImage(){
-		JFrame frame = new JFrame("Display image");
+	
+	public ShowImage(String name){
+		JFrame frame = new JFrame(name);
 		frame.getContentPane().add(this);
 		frame.setSize(500, 500);
 		frame.setVisible(true);
