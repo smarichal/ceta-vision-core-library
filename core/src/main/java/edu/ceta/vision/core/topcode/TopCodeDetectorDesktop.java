@@ -8,6 +8,7 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 import org.opencv.highgui.Highgui;
@@ -63,7 +64,7 @@ public class TopCodeDetectorDesktop extends TopCodeDetector{
 		this.setBusy(true);
 		if(capture!=null && capture.isOpened()){
 			capture.read(frame);
-			//TODO:smarichal Flip, rotate or adjust the image size
+			Core.flip(frame, frame, 0);
 			BufferedImage rgbaImage = new BufferedImage((int)capture.get(Highgui.CV_CAP_PROP_FRAME_WIDTH), (int)capture.get(Highgui.CV_CAP_PROP_FRAME_HEIGHT), BufferedImage.TYPE_3BYTE_BGR);
 			
 			this.image=rgbaImage.getSubimage(this.detectionZone.x, this.detectionZone.y, this.detectionZone.width-this.detectionZone.x, this.detectionZone.height-this.detectionZone.x);			
